@@ -52,11 +52,12 @@ func OpenTunnel(targetHost string) *net.UDPConn{
 //    localport := udpConn.LocalAddr().(*net.UDPAddr).Port;
 
 
-//    fmt.Printf("%v \n\n", udpConn.LocalAddr().(*net.UDPAddr).Port)
+
 
 //    conn, err := net.DialUDP(UDP_TYPE, NewUdpAddress("localhost", localport), NewUdpAddress(targetHost, LISTEN_PORT))
     conn, err := net.DialUDP(UDP_TYPE, nil, NewUdpAddress(targetHost, LISTEN_PORT))
     e(err)
+//    fmt.Printf("%v \n\n", conn.LocalAddr().(*net.UDPAddr).Port)
     return conn
 }
 
