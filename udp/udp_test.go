@@ -6,6 +6,7 @@ import (
 //    "time"
     "runtime"
     "time"
+    "sync"
 )
 
 
@@ -59,19 +60,34 @@ func Test_listening(t *testing.T) {
 
 func Test_listening3(t *testing.T) {
     listenOnNewConnections := func(conn *net.UDPConn, remoteAddr *net.UDPAddr){
-        fmt.Printf("tracing remoteAddr %v \n\n", remoteAddr)
-        fmt.Printf("tracing localAddr %v \n\n", conn.LocalAddr())
-        byteslice := make([]byte, 1)
-        _, add, err := conn.ReadFromUDP(byteslice)
-        E(err)
-        fmt.Printf("%v %v %v\n\n", add, remoteAddr, byteslice)
+        for {
+            b := make([]byte, 2^16)
+            conn.ReadFromUDP(b)
+            fmt.Printf(string(b))
+        }
     }
 
     //start the "server" listening
     targetPort := 10001
     go Listen(targetPort, listenOnNewConnections)
     runtime.Gosched()
+    tunnel := OpenConnection("localhost", targetPort)
+
+    var wg sync.WaitGroup
+
+    wg.Add(1)
+
+    go func() {
+        for i := 0; i < 10; i++ {
+            tunnel.Send([]byte("yo\n"))
+        }
+        wg.Done()
+    }()
+
     OpenConnection("localhost", targetPort)
+    OpenConnection("localhost", targetPort)
+
+    wg.Wait()
 }
 
 func Test_listening2(t *testing.T) {

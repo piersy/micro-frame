@@ -9,6 +9,22 @@ import (
 
 const UDP_TYPE = "udp4"
 
+type Tunnel interface {
+    Send(bytes []byte)
+}
+
+type DefaultTunnel struct {
+    conn *net.UDPConn
+    targetAddr *net.UDPAddr
+}
+
+
+func (t *DefaultTunnel) Send(bytes []byte){
+    _, err:= t.conn.WriteToUDP(bytes, t.targetAddr)
+    E(err)
+}
+
+
 func NewUdpAddress(ip string, port int) *net.UDPAddr {
     return &net.UDPAddr{IP: net.ParseIP(ip), Port: port}
 }
@@ -24,39 +40,36 @@ func NewUdpAddress(ip string, port int) *net.UDPAddr {
 //        }
 
 
-func Listen(port int, newConnection func(*net.UDPConn, *net.UDPAddr)) {
+func Listen(port int, notifyConnection func(*net.UDPConn, *net.UDPAddr)) {
     handOffNewConn := func(remoteAddr *net.UDPAddr) {
         persistentConn, err := net.ListenUDP(UDP_TYPE, nil)
         E(err)
-        fmt.Printf("new server listen on %v \n\n", persistentConn.LocalAddr())
-        fmt.Printf("notify of new connection \n")
-        go newConnection(persistentConn, remoteAddr)
+        //notify server of new connection
+        go notifyConnection(persistentConn, remoteAddr)
         runtime.Gosched()
-        _, err = persistentConn.WriteToUDP([]byte("yo"), remoteAddr)
+        //notify calling end of new listen point
+        _, err = persistentConn.WriteToUDP(nil, remoteAddr)
         E(err)
-        fmt.Printf("server return address to %v \n\n", remoteAddr)
     }
     listenConn, err := net.ListenUDP(UDP_TYPE, NewUdpAddress("localhost", port))
     fmt.Printf("server listening on %v \n\n", listenConn.LocalAddr())
     E(err)
-    readBytes := make([]byte, 1)
     for {
-        _, returnAddr, err := listenConn.ReadFromUDP(readBytes)
+        _, returnAddr, err := listenConn.ReadFromUDP(nil)
         E(err)
-
         fmt.Printf("server received incoming from %v\n\n", returnAddr)
         go handOffNewConn(returnAddr)
     }
 }
 
-func OpenConnection(targetHost string, targetPort int) (*net.UDPConn, *net.UDPAddr) {
+func OpenConnection(targetHost string, targetPort int) Tunnel {
     conn, err := net.ListenUDP(UDP_TYPE, nil)
     E(err)
     conn.WriteToUDP([]byte("yo"), NewUdpAddress(targetHost, targetPort))
     _,add,err := conn.ReadFromUDP(nil)
     E(err)
-    fmt.Printf("established nee connection to %v \n\n", add)
-    return conn, add
+    fmt.Printf("established new connection to %v \n\n", add)
+    return &DefaultTunnel{conn, add}
 }
 
 func OpenTunnel(targetHost string) *net.UDPConn {
