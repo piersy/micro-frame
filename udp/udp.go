@@ -12,18 +12,18 @@ type Tunnel interface {
 	Read() []byte
 }
 
-type DefaultTunnel struct {
+type udpTunnel struct {
 	conn       *net.UDPConn
 	targetAddr *net.UDPAddr
 }
 
 
-func (t *DefaultTunnel) Send(bytes []byte) {
+func (t *udpTunnel) Send(bytes []byte) {
 	_, err := t.conn.WriteToUDP(bytes, t.targetAddr)
 	E(err)
 }
 
-func (t *DefaultTunnel) Read() []byte {
+func (t *udpTunnel) Read() []byte {
 	b := make([]byte, 2^16)
 	_, _, err := t.conn.ReadFromUDP(b)
 	E(err)
@@ -40,7 +40,7 @@ func Listen(port int, notifyConnection func(t Tunnel)) {
 		persistentConn, err := net.ListenUDP(UDP_TYPE, nil)
 		E(err)
 		//notify new connection
-		tunnel := &DefaultTunnel{persistentConn, remoteAddr}
+		tunnel := &udpTunnel{persistentConn, remoteAddr}
 		go notifyConnection(tunnel)
 		runtime.Gosched()
 		//notify client of new port
@@ -69,7 +69,7 @@ func OpenConnection(targetHost string, targetPort int) Tunnel {
 	_, add, err := conn.ReadFromUDP(nil)
 	E(err)
 	fmt.Printf("established new connection to %v \n\n", add)
-	return &DefaultTunnel{conn, add}
+	return &udpTunnel{conn, add}
 }
 
 func E(err error) {
