@@ -69,7 +69,7 @@ func Test_listening3(t *testing.T) {
 	targetPort := 10001
 	go Listen(targetPort, listenOnNewConnections)
 	runtime.Gosched()
-	tunnel := OpenConnection("localhost", targetPort)
+	tunnel := OpenTunnel("localhost", targetPort)
 
 	var wg sync.WaitGroup
 
@@ -77,13 +77,13 @@ func Test_listening3(t *testing.T) {
 
 	go func() {
 		for i := 0; i < 10; i++ {
-			tunnel.Send([]byte("yo\n"))
+			tunnel.Write([]byte("yo\n"))
 		}
 		wg.Done()
 	}()
 
-	OpenConnection("localhost", targetPort)
-	OpenConnection("localhost", targetPort)
+	OpenTunnel("localhost", targetPort)
+	OpenTunnel("localhost", targetPort)
 
 	wg.Wait()
 }

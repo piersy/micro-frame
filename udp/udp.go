@@ -8,7 +8,7 @@ import (
 const UDP_TYPE = "udp4"
 
 type Tunnel interface {
-	Send(bytes []byte)
+	Write(bytes []byte)
 	Read() []byte
 }
 
@@ -18,7 +18,7 @@ type udpTunnel struct {
 }
 
 
-func (t *udpTunnel) Send(bytes []byte) {
+func (t *udpTunnel) Write(bytes []byte) {
 	_, err := t.conn.WriteToUDP(bytes, t.targetAddr)
 	E(err)
 }
@@ -44,7 +44,7 @@ func Listen(port int, notifyConnection func(t Tunnel)) {
 		go notifyConnection(tunnel)
 		runtime.Gosched()
 		//notify client of new port
-		tunnel.Send(nil)
+		tunnel.Write(nil)
 	}
 	listenConn, err := net.ListenUDP(UDP_TYPE, NewUdpAddress("localhost", port))
 	fmt.Printf("server listening on %v \n\n", listenConn.LocalAddr())
@@ -59,7 +59,7 @@ func Listen(port int, notifyConnection func(t Tunnel)) {
 	}
 }
 
-func OpenConnection(targetHost string, targetPort int) Tunnel {
+func OpenTunnel(targetHost string, targetPort int) Tunnel {
 	//Listen on a port
 	conn, err := net.ListenUDP(UDP_TYPE, nil)
 	E(err)
