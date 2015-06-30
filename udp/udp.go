@@ -24,30 +24,19 @@ func (t *DefaultTunnel) Send(bytes []byte){
     E(err)
 }
 
-
 func NewUdpAddress(ip string, port int) *net.UDPAddr {
     return &net.UDPAddr{IP: net.ParseIP(ip), Port: port}
 }
 
-
-//        readToChannel := func(conn *net.UDPConn, channel chan []byte){
-//            //max size of udp packet
-//            packet := make([]byte, 2**16)
-//            for {
-//                conn.ReadFromUDP(packet)
-//                channel <- packet
-//            }
-//        }
-
-
 func Listen(port int, notifyConnection func(*net.UDPConn, *net.UDPAddr)) {
     handOffNewConn := func(remoteAddr *net.UDPAddr) {
+        //Open a new listen port
         persistentConn, err := net.ListenUDP(UDP_TYPE, nil)
         E(err)
-        //notify server of new connection
+        //notify new connection
         go notifyConnection(persistentConn, remoteAddr)
         runtime.Gosched()
-        //notify calling end of new listen point
+        //notify client of new port
         _, err = persistentConn.WriteToUDP(nil, remoteAddr)
         E(err)
     }
@@ -55,17 +44,24 @@ func Listen(port int, notifyConnection func(*net.UDPConn, *net.UDPAddr)) {
     fmt.Printf("server listening on %v \n\n", listenConn.LocalAddr())
     E(err)
     for {
+        //Lsiten for incoming signals
         _, returnAddr, err := listenConn.ReadFromUDP(nil)
         E(err)
         fmt.Printf("server received incoming from %v\n\n", returnAddr)
+        //Create new connection
         go handOffNewConn(returnAddr)
     }
 }
 
+
+
 func OpenConnection(targetHost string, targetPort int) Tunnel {
+    //Listen on a port
     conn, err := net.ListenUDP(UDP_TYPE, nil)
     E(err)
-    conn.WriteToUDP([]byte("yo"), NewUdpAddress(targetHost, targetPort))
+    //InitiateNewConnection
+    conn.WriteToUDP(nil, NewUdpAddress(targetHost, targetPort))
+    //Read return adress
     _,add,err := conn.ReadFromUDP(nil)
     E(err)
     fmt.Printf("established new connection to %v \n\n", add)
