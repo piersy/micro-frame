@@ -23,47 +23,45 @@ func Test_initial(t *testing.T) {
 
 }
 
-func Test_listening(t *testing.T) {
-	listenOnNewConnections := func(conn *net.UDPConn, remoteAddr *net.UDPAddr) {
-		fmt.Printf("tracing remoteAddr %v \n\n", remoteAddr)
-		fmt.Printf("tracing localAddr %v \n\n", conn.LocalAddr())
-		byteslice := make([]byte, 1)
-		_, add, err := conn.ReadFromUDP(byteslice)
-		E(err)
-		fmt.Printf("%v %v %v\n\n", add, remoteAddr, byteslice)
-	}
-
-	//start the "server" listening
-	targetPort := 10001
-	go Listen(targetPort, listenOnNewConnections)
-	runtime.Gosched()
-
-	readresponseAddr := func(conn *net.UDPConn) {
-		byteslice := make([]byte, 1)
-		_, add, err := conn.ReadFromUDP(byteslice)
-		E(err)
-
-		fmt.Printf("recieved new target address from server %v \n\n", add)
-		conn.WriteToUDP([]byte("yo"), add)
-	}
-	conn, err := net.ListenUDP(UDP_TYPE, nil)
-	fmt.Printf("client listening on %v \n\n", conn.LocalAddr())
-	E(err)
-	go readresponseAddr(conn)
-	runtime.Gosched()
-	fmt.Printf("calling from %v \n\n", conn.LocalAddr())
-	conn.WriteToUDP([]byte("yo"), NewUdpAddress("localhost", targetPort))
-
-	time.Sleep(time.Second)
-}
+//func Test_listening(t *testing.T) {
+//	listenOnNewConnections := func(conn *net.UDPConn, remoteAddr *net.UDPAddr) {
+//		fmt.Printf("tracing remoteAddr %v \n\n", remoteAddr)
+//		fmt.Printf("tracing localAddr %v \n\n", conn.LocalAddr())
+//		byteslice := make([]byte, 1)
+//		_, add, err := conn.ReadFromUDP(byteslice)
+//		E(err)
+//		fmt.Printf("%v %v %v\n\n", add, remoteAddr, byteslice)
+//	}
+//
+//	//start the "server" listening
+//	targetPort := 10001
+//	go Listen(targetPort, listenOnNewConnections)
+//	runtime.Gosched()
+//
+//	readresponseAddr := func(conn *net.UDPConn) {
+//		byteslice := make([]byte, 1)
+//		_, add, err := conn.ReadFromUDP(byteslice)
+//		E(err)
+//
+//		fmt.Printf("recieved new target address from server %v \n\n", add)
+//		conn.WriteToUDP([]byte("yo"), add)
+//	}
+//	conn, err := net.ListenUDP(UDP_TYPE, nil)
+//	fmt.Printf("client listening on %v \n\n", conn.LocalAddr())
+//	E(err)
+//	go readresponseAddr(conn)
+//	runtime.Gosched()
+//	fmt.Printf("calling from %v \n\n", conn.LocalAddr())
+//	conn.WriteToUDP([]byte("yo"), NewUdpAddress("localhost", targetPort))
+//
+//	time.Sleep(time.Second)
+//}
 
 
 func Test_listening3(t *testing.T) {
-	listenOnNewConnections := func(conn *net.UDPConn, remoteAddr *net.UDPAddr) {
+	listenOnNewConnections := func(t Tunnel) {
 		for {
-			b := make([]byte, 2^16)
-			conn.ReadFromUDP(b)
-			fmt.Printf(string(b))
+			fmt.Printf(string(t.Read()))
 		}
 	}
 
